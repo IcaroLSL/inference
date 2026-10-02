@@ -5,6 +5,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// 
 type Server struct {
 	db *mongo.Database
 }

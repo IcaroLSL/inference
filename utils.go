@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// coleta variáveis de ambiente e adiciona um valor padrão caso não exista
 func getEnv(key, fallback string) string {
 	value := os.Getenv(key)
 	if value == "" {
@@ -17,6 +18,7 @@ func getEnv(key, fallback string) string {
 	return value
 }
 
+// escreve uma resposta JSON para o cliente
 func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -28,7 +30,8 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 	}
 }
 
-func validateInfos(request InferenceDataRequest, w http.ResponseWriter) error{
+// valida os dados recebidos na requisição
+func validateInfos(request InferenceDataRequest, w http.ResponseWriter) error {
 	if request.SessionID == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "sessionId is required",
@@ -54,6 +57,7 @@ func validateInfos(request InferenceDataRequest, w http.ResponseWriter) error{
 	return nil
 }
 
+// converte um valor para int, retor0nando 0 como padrão
 func toInt(v interface{}) int {
 	switch n := v.(type) {
 	case int:
@@ -68,23 +72,25 @@ func toInt(v interface{}) int {
 	return 0
 }
 
+// converte um valor para string, retornando "" como padrão
 func toString(v interface{}) string {
 	s, _ := v.(string)
 	return s
 }
 
+// converte um valor para bool, retornando false como padrão
 func toBool(v interface{}) bool {
 	b, _ := v.(bool)
 	return b
 }
 
+// remove acentos e espaços e normaliza uma string para minúsculas
 var accentReplacer = strings.NewReplacer(
 	"á", "a", "à", "a", "ã", "a", "â", "a",
 	"é", "e", "ê", "e", "í", "i",
 	"ó", "o", "õ", "o", "ô", "o",
 	"ú", "u", "ç", "c",
 )
-
 func normalize(s string) string {
 	return accentReplacer.Replace(strings.ToLower(strings.TrimSpace(s)))
 }

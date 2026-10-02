@@ -15,27 +15,29 @@ import (
 )
 
 func main() {
+	// Variaveis de ambiente
 	_ = godotenv.Load()
-	
 	mongoURI := getEnv("MONGO_URI", "")
 	dbName := getEnv("MONGO_DB", "")
 	port := getEnv("PORT", "")
 
+    // Configuração do MongoDB
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	tlsInsecure := getEnv("MONGO_TLS_INSECURE", "false")
+	tlsInsecure := getEnv("MONGO_TLS_INSECURE", "")
 	clientOpts := options.Client().ApplyURI(mongoURI).SetServerSelectionTimeout(20 * time.Second)
 	if tlsInsecure == "true" {
 		clientOpts = clientOpts.SetTLSConfig(&tls.Config{InsecureSkipVerify: true})
 	}
 
+	// Conexão com o MongoDB
 	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
 		log.Fatalf("mongo connect error: %v", err)
 	}
 
-
+	// Ping do MongoDB para tentativas de reconexão
 	var pingErr error
 	for i := 0; i < 3; i++ {
 		pingCtx, pingCancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -52,11 +54,15 @@ func main() {
 		log.Fatalf("mongo ping failed after retries: %v", pingErr)
 	}
 
+	// Configuração do servidor HTTP
 	server := &Server{
 		db: client.Database(dbName),
 	}
 
+	// Configuração do roteador
 	r := chi.NewRouter()
+
+	// Configuração do CORS
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"OPTIONS", "GET", "POST", "PUT", "PATCH", "DELETE"},
@@ -66,12 +72,15 @@ func main() {
 		MaxAge:           300,
 	}))
 
+	// Rotas
 	r.Get("/", server.info)
 
 	r.Get("/v1/inference/session", server.InferenceSession)
 	r.Post("/v1/inference/data", server.inferenceData)
 	r.Get("/v1/inference", server.inference)
 	log.Printf("listening on :%s", port)
+
+	// Inicia o servidor HTTP
 	if err := http.ListenAndServe(":"+port, r); err != nil {
 		log.Fatalf("server error: %v", err)
 	}

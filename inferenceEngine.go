@@ -1,6 +1,6 @@
 package main
 
-
+// Definição do nível de orçamento e tipos de quarto
 const (
 	OrcamentoBaixo = 1
 	OrcamentoMedio = 2
@@ -15,6 +15,7 @@ const (
 	Indefinido     = "indefinido"
 )
 
+// Estruturas de dados para a sessão de inferência
 type facts struct {
 	people        int
 	budget        int
@@ -23,12 +24,15 @@ type facts struct {
 	accommodation string
 }
 
+
+// Estrutura para definir regras de inferência
 type Rule struct {
 	ID     string
 	Cond   func(f facts) bool
 	Result string
 }
 
+// regras de inferência para determinar o tipo de quarto com base nos fatos
 var rules = []Rule{
 	{"R01", func(f facts) bool { return f.people == 1 && f.budget == OrcamentoBaixo }, QuartoStandard},
 	{"R02", func(f facts) bool {
@@ -54,6 +58,7 @@ var rules = []Rule{
 	}, QuartoLuxo},
 }
 
+// Executor de inferência
 func runInference(raw InferenceFacts) (string, string) {
 	f := facts{
 		people:        toInt(raw["people"]),
