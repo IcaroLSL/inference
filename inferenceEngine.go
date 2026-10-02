@@ -56,6 +56,9 @@ var rules = []Rule{
 	{"R10", func(f facts) bool {
 		return f.people == 1 && f.budget == OrcamentoAlto && f.focus == "conforto"
 	}, QuartoLuxo},
+	{"R11", func(f facts) bool {
+		return f.people == 3 && f.budget == OrcamentoMedio && f.focus == "conforto" && !f.child && f.accommodation == "normal"
+	}, QuartoLuxo},
 }
 
 // Executor de inferência
