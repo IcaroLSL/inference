@@ -11,7 +11,7 @@ import (
 )
 
 func (s *Server) info(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]interface{}{"message": "Ymir API is running",
+	writeJSON(w, http.StatusOK, map[string]interface{}{ "message": "Ymir is running",
 												       	"routes": []string{
 																			  "Info:              GET  = /",
 																		      "Inference Engine:  GET  = /v1/inference",
