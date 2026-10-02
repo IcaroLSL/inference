@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ymir · Inferência de Hotel</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    }
+
+    body {
+      background: #0b0f1a;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+
+    /* Phone frame */
+    .phone {
+      width: 100%;
+      max-width: 400px;
+      background: #111827;
+      border-radius: 44px;
+      box-shadow:
+        0 0 0 8px #1f2937,
+        0 25px 50px -12px rgba(0, 0, 0, 0.8),
+        inset 0 0 0 2px #374151;
+      overflow: hidden;
+      position: relative;
+      height: 780px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Notch */
+    .notch {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 140px;
+      height: 28px;
+      background: #1f2937;
+      border-radius: 0 0 20px 20px;
+      z-index: 10;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .notch .speaker {
+      width: 40px;
+      height: 4px;
+      background: #374151;
+      border-radius: 4px;
+    }
+
+    .notch .camera {
+      width: 8px;
+      height: 8px;
+      background: #1e3a5f;
+      border-radius: 50%;
+      border: 2px solid #2d4a6f;
+    }
+
+    /* Status bar */
+    .status-bar {
+      padding: 38px 24px 8px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #9ca3af;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+
+    .status-bar .icons {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .status-bar .icons span {
+      font-size: 14px;
+    }
+
+    /* App header */
+    .app-header {
+      padding: 8px 24px 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .app-header .logo {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+
+    .app-header .title {
+      color: #f9fafb;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .app-header .subtitle {
+      color: #6b7280;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+
+    /* Scrollable content */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 20px 24px 20px;
+      scroll-behavior: smooth;
+    }
+
+    .content::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .content::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .content::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 4px;
+    }
+
+    /* Session card */
+    .session-card {
+      background: #1f2937;
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 20px;
+      border: 1px solid #374151;
+      transition: all 0.3s ease;
+    }
+
+    .session-card.active {
+      border-color: #6366f1;
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+    }
+
+    .session-label {
+      color: #9ca3af;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .session-id {
+      color: #e5e7eb;
+      font-size: 13px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      word-break: break-all;
+      background: #111827;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #374151;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+    }
+
+    .session-id.empty {
+      color: #4b5563;
+      font-style: italic;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      letter-spacing: 0.2px;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+      margin-top: 12px;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      box-shadow: 0 6px 24px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-secondary {
+      background: #1f2937;
+      color: #e5e7eb;
+      border: 1px solid #374151;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #374151;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: white;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+    }
+
+    .btn-success:hover:not(:disabled) {
+      box-shadow: 0 6px 24px rgba(16, 185, 129, 0.5);
+    }
+
+    /* Steps */
+    .steps-section {
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      color: #9ca3af;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title .badge {
+      background: #374151;
+      color: #9ca3af;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 700;
+    }
+
+    .step-item {
+      background: #1f2937;
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      border: 1px solid #374151;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .step-item.completed {
+      border-color: #059669;
+      background: linear-gradient(135deg, #1f2937, #0f2e1f);
+    }
+
+    .step-item.completed::after {
+      content: '✓';
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      color: #10b981;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .step-item.current {
+      border-color: #6366f1;
+      box-shadow: 0 0 16px rgba(99, 102, 241, 0.12);
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .step-number {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: #374151;
+      color: #9ca3af;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .step-item.completed .step-number {
+      background: #059669;
+      color: white;
+    }
+
+    .step-item.current .step-number {
+      background: #6366f1;
+      color: white;
+    }
+
+    .step-label {
+      color: #e5e7eb;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .step-desc {
+      color: #6b7280;
+      font-size: 11px;
+      margin-left: 36px;
+      line-height: 1.4;
+    }
+
+    .step-value {
+      color: #a5b4fc;
+      font-size: 12px;
+      margin-left: 36px;
+      margin-top: 4px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-weight: 500;
+    }
+
+    /* Input area */
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+      margin-left: 36px;
+      align-items: center;
+    }
+
+    .input-group input,
+    .input-group select {
+      flex: 1;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #e5e7eb;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+
+    .input-group input:focus,
+    .input-group select:focus {
+      border-color: #6366f1;
+    }
+
+    .input-group input::placeholder {
+      color: #4b5563;
+    }
+
+    .input-group select option {
+      background: #1f2937;
+      color: #e5e7eb;
+    }
+
+    .btn-send {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      background: #6366f1;
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .btn-send:hover:not(:disabled) {
+      background: #4f46e5;
+    }
+
+    .btn-send:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+
+    .btn-send:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Result card */
+    .result-card {
+      background: linear-gradient(135deg, #1f2937, #111827);
+      border-radius: 20px;
+      padding: 20px;
+      margin-top: 20px;
+      border: 1px solid #374151;
+      text-align: center;
+      animation: fadeInUp 0.5s ease;
+    }
+
+    .result-card .result-label {
+      color: #9ca3af;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 8px;
+    }
+
+    .result-card .result-value {
+      color: #f9fafb;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #a5b4fc, #c4b5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .result-card .result-rule {
+      display: inline-block;
+      background: #374151;
+      color: #9ca3af;
+      font-size: 12px;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1f2937;
+      color: #e5e7eb;
+      padding: 12px 24px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+      border: 1px solid #374151;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1000;
+      max-width: 340px;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast.error {
+      border-color: #7f1d1d;
+      background: #1f1215;
+    }
+
+    .toast.success {
+      border-color: #064e3b;
+      background: #0f1f1a;
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .loading {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: #1f2937;
+      margin: 20px 0;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 24px 16px;
+      color: #4b5563;
+    }
+
+    .empty-state .icon {
+      font-size: 36px;
+      margin-bottom: 8px;
+    }
+
+    .empty-state p {
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* API status dot */
+    .api-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+      font-size: 11px;
+      color: #6b7280;
+      font-weight: 500;
+    }
+
+    .api-status .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+
+    .api-status .dot.offline {
+      background: #ef4444;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+    }
+
+    /* Bottom bar */
+    .bottom-bar {
+      padding: 12px 20px 20px 20px;
+      background: #111827;
+      border-top: 1px solid #1f2937;
+      flex-shrink: 0;
+    }
+
+    .bottom-bar .home-indicator {
+      width: 120px;
+      height: 4px;
+      background: #374151;
+      border-radius: 4px;
+      margin: 8px auto 0 auto;
+    }
+  </style>
+</head>
+<body>
+
+<div class="phone">
+  <!-- Notch -->
+  <div class="notch">
+    <div class="speaker"></div>
+    <div class="camera"></div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="icons">
+      <span>📶</span>
+      <span>🔋</span>
+    </div>
+  </div>
+
+  <!-- App Header -->
+  <div class="app-header">
+    <div class="logo">🏨</div>
+    <div>
+      <div class="title">Ymir</div>
+      <div class="subtitle">Inferência de Hotel</div>
+    </div>
+    <div class="api-status">
+      <div class="dot" id="apiDot"></div>
+      <span id="apiStatusText">online</span>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content" id="content">
+
+    <!-- Session Card -->
+    <div class="session-card" id="sessionCard">
+      <div class="session-label">Sessão Ativa</div>
+      <div class="session-id empty" id="sessionIdDisplay">Nenhuma sessão criada</div>
+      <button class="btn btn-primary" id="btnCreateSession">
+        <span>✨</span> Criar Nova Sessão
+      </button>
+    </div>
+
+    <!-- Steps Section -->
+    <div class="steps-section" id="stepsSection">
+      <div class="section-title">
+        Etapas de Coleta
+        <span class="badge" id="stepProgress">0/5</span>
+      </div>
+
+      <!-- Step 1 -->
+      <div class="step-item" id="step1" data-step="1">
+        <div class="step-header">
+          <div class="step-number">1</div>
+          <div class="step-label">Pessoas</div>
+        </div>
+        <div class="step-desc">Número de hóspedes (1 a 6)</div>
+        <div class="step-value" id="step1Value" style="display:none;"></div>
+        <div class="input-group" id="step1Input">
+          <input type="number" id="inputPeople" min="1" max="6" placeholder="Ex: 2">
+          <button class="btn-send" id="btnStep1" disabled>Enviar</button>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step-item" id="step2" data-step="2">
+        <div class="step-header">
+          <div class="step-number">2</div>
+          <div class="step-label">Orçamento</div>
+        </div>
+        <div class="step-desc">1 = baixo · 2 = médio · 3 = alto</div>
+        <div class="step-value" id="step2Value" style="display:none;"></div>
+        <div class="input-group" id="step2Input">
+          <select id="inputBudget">
+            <option value="">Selecione...</option>
+            <option value="1">1 — Baixo</option>
+            <option value="2">2 — Médio</option>
+            <option value="3">3 — Alto</option>
+          </select>
+          <button class="btn-send" id="btnStep2" disabled>Enviar</button>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step-item" id="step3" data-step="3">
+        <div class="step-header">
+          <div class="step-number">3</div>
+          <div class="step-label">Foco</div>
+        </div>
+        <div class="step-desc">economia · conforto · privacidade · espaco</div>
+        <div class="step-value" id="step3Value" style="display:none;"></div>
+        <div class="input-group" id="step3Input">
+          <select id="inputFocus">
+            <option value="">Selecione...</option>
+            <option value="economia">Economia</option>
+            <option value="conforto">Conforto</option>
+            <option value="privacidade">Privacidade</option>
+            <option value="espaco">Espaço</option>
+          </select>
+          <button class="btn-send" id="btnStep3" disabled>Enviar</button>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step-item" id="step4" data-step="4">
+        <div class="step-header">
+          <div class="step-number">4</div>
+          <div class="step-label">Criança</div>
+        </div>
+        <div class="step-desc">true / false</div>
+        <div class="step-value" id="step4Value" style="display:none;"></div>
+        <div class="input-group" id="step4Input">
+          <select id="inputChild">
+            <option value="">Selecione...</option>
+            <option value="true">Sim</option>
+            <option value="false">Não</option>
+          </select>
+          <button class="btn-send" id="btnStep4" disabled>Enviar</button>
+        </div>
+      </div>
+
+      <!-- Step 5 -->
+      <div class="step-item" id="step5" data-step="5">
+        <div class="step-header">
+          <div class="step-number">5</div>
+          <div class="step-label">Acomodação</div>
+        </div>
+        <div class="step-desc">Ex: lua de mel, normal</div>
+        <div class="step-value" id="step5Value" style="display:none;"></div>
+        <div class="input-group" id="step5Input">
+          <select id="inputAccommodation">
+            <option value="">Selecione...</option>
+            <option value="lua de mel">Lua de mel</option>
+            <option value="normal">Normal</option>
+            <option value="trabalho">Trabalho</option>
+            <option value="familia">Família</option>
+          </select>
+          <button class="btn-send" id="btnStep5" disabled>Enviar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Inference Button -->
+    <button class="btn btn-success" id="btnInference" disabled>
+      <span>🔮</span> Executar Inferência
+    </button>
+
+    <!-- Result -->
+    <div id="resultContainer"></div>
+
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="bottom-bar">
+    <div class="home-indicator"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ============================================================
+  // CONFIGURAÇÃO DA API
+  // ============================================================
+  const API_BASE = 'http://localhost:8080';
+
+  // ============================================================
+  // ESTADO DA APLICAÇÃO
+  // ============================================================
+  const state = {
+    sessionId: null,
+    facts: {},
+    completedSteps: new Set(),
+    currentStep: 1,
+    loading: false
+  };
+
+  // ============================================================
+  // ELEMENTOS DO DOM
+  // ============================================================
+  const els = {
+    apiDot: document.getElementById('apiDot'),
+    apiStatusText: document.getElementById('apiStatusText'),
+    sessionCard: document.getElementById('sessionCard'),
+    sessionIdDisplay: document.getElementById('sessionIdDisplay'),
+    btnCreateSession: document.getElementById('btnCreateSession'),
+    stepProgress: document.getElementById('stepProgress'),
+    btnInference: document.getElementById('btnInference'),
+    resultContainer: document.getElementById('resultContainer'),
+    toast: document.getElementById('toast')
+  };
+
+  // Step elements
+  const stepEls = {
+    1: {
+      item: document.getElementById('step1'),
+      value: document.getElementById('step1Value'),
+      input: document.getElementById('step1Input'),
+      inputField: document.getElementById('inputPeople'),
+      btn: document.getElementById('btnStep1')
+    },
+    2: {
+      item: document.getElementById('step2'),
+      value: document.getElementById('step2Value'),
+      input: document.getElementById('step2Input'),
+      inputField: document.getElementById('inputBudget'),
+      btn: document.getElementById('btnStep2')
+    },
+    3: {
+      item: document.getElementById('step3'),
+      value: document.getElementById('step3Value'),
+      input: document.getElementById('step3Input'),
+      inputField: document.getElementById('inputFocus'),
+      btn: document.getElementById('btnStep3')
+    },
+    4: {
+      item: document.getElementById('step4'),
+      value: document.getElementById('step4Value'),
+      input: document.getElementById('step4Input'),
+      inputField: document.getElementById('inputChild'),
+      btn: document.getElementById('btnStep4')
+    },
+    5: {
+      item: document.getElementById('step5'),
+      value: document.getElementById('step5Value'),
+      input: document.getElementById('step5Input'),
+      inputField: document.getElementById('inputAccommodation'),
+      btn: document.getElementById('btnStep5')
+    }
+  };
+
+  // ============================================================
+  // FUNÇÕES AUXILIARES
+  // ============================================================
+
+  function showToast(message, type = 'info') {
+    const toast = els.toast;
+    toast.textContent = message;
+    toast.className = 'toast show ' + type;
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => {
+      toast.className = 'toast';
+    }, 3000);
+  }
+
+  function setApiStatus(online) {
+    els.apiDot.className = 'dot' + (online ? '' : ' offline');
+    els.apiStatusText.textContent = online ? 'online' : 'offline';
+  }
+
+  function updateStepProgress() {
+    const count = state.completedSteps.size;
+    els.stepProgress.textContent = `${count}/5`;
+  }
+
+  function updateInferenceButton() {
+    els.btnInference.disabled = state.completedSteps.size < 5 || state.loading;
+  }
+
+  function setLoading(loading) {
+    state.loading = loading;
+    updateInferenceButton();
+    // Disable all step buttons during loading
+    Object.values(stepEls).forEach(s => {
+      s.btn.disabled = loading || state.completedSteps.has(parseInt(s.btn.dataset.step));
+    });
+  }
+
+  function formatValue(step, value) {
+    switch (step) {
+      case 1: return `${value} pessoa(s)`;
+      case 2: {
+        const labels = { 1: 'Baixo', 2: 'Médio', 3: 'Alto' };
+        return `Orçamento: ${labels[value] || value}`;
+      }
+      case 3: return `Foco: ${value}`;
+      case 4: return value ? 'Com criança' : 'Sem criança';
+      case 5: return `Acomodação: ${value}`;
+      default: return String(value);
+    }
+  }
+
+  function getStepLabel(step) {
+    const labels = {
+      1: 'Pessoas',
+      2: 'Orçamento',
+      3: 'Foco',
+      4: 'Criança',
+      5: 'Acomodação'
+    };
+    return labels[step] || `Step ${step}`;
+  }
+
+  // ============================================================
+  // COMUNICAÇÃO COM A API
+  // ============================================================
+
+  async function apiCall(endpoint, options = {}) {
+    const url = `${API_BASE}${endpoint}`;
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers
+        },
+        ...options
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || `Erro ${response.status}`);
+      }
+
+      setApiStatus(true);
+      return data;
+    } catch (err) {
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        setApiStatus(false);
+        throw new Error('API offline. Verifique se o servidor está rodando.');
+      }
+      throw err;
+    }
+  }
+
+  // Criar sessão
+  async function createSession() {
+    try {
+      setLoading(true);
+      els.btnCreateSession.disabled = true;
+      els.btnCreateSession.innerHTML = '<span class="loading">⏳</span> Criando...';
+
+      const data = await apiCall('/v1/inference/session');
+
+      state.sessionId = data.sessionId;
+      state.facts = {};
+      state.completedSteps.clear();
+      state.currentStep = 1;
+
+      // Reset UI
+      els.sessionIdDisplay.textContent = state.sessionId;
+      els.sessionIdDisplay.classList.remove('empty');
+      els.sessionCard.classList.add('active');
+
+      // Reset steps
+      Object.entries(stepEls).forEach(([step, el]) => {
+        const stepNum = parseInt(step);
+        el.item.classList.remove('completed', 'current');
+        el.value.style.display = 'none';
+        el.input.style.display = 'flex';
+        el.inputField.value = '';
+        el.btn.disabled = stepNum !== 1;
+        el.btn.dataset.step = stepNum;
+      });
+
+      // Set current step
+      stepEls[1].item.classList.add('current');
+
+      // Reset result
+      els.resultContainer.innerHTML = '';
+
+      updateStepProgress();
+      updateInferenceButton();
+
+      showToast('Sessão criada com sucesso!', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setLoading(false);
+      els.btnCreateSession.disabled = false;
+      els.btnCreateSession.innerHTML = '<span>✨</span> Criar Nova Sessão';
+    }
+  }
+
+  // Enviar dados de um step
+  async function sendStepData(step) {
+    const el = stepEls[step];
+    let value = el.inputField.value;
+
+    // Validação básica
+    if (value === '' || value === null) {
+      showToast('Preencha o valor antes de enviar.', 'error');
+      return;
+    }
+
+    // Conversão de tipos
+    if (step === 1) {
+      value = parseInt(value, 10);
+      if (isNaN(value) || value < 1 || value > 6) {
+        showToast('O número de pessoas deve ser de 1 a 6.', 'error');
+        return;
+      }
+    } else if (step === 2) {
+      value = parseInt(value, 10);
+      if (isNaN(value) || value < 1 || value > 3) {
+        showToast('Orçamento deve ser 1, 2 ou 3.', 'error');
+        return;
+      }
+    } else if (step === 4) {
+      value = value === 'true';
+    }
+
+    try {
+      setLoading(true);
+      el.btn.disabled = true;
+
+      const payload = {
+        sessionId: state.sessionId,
+        step: step,
+        data: value
+      };
+
+      const data = await apiCall('/v1/inference/data', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      // Atualizar estado
+      state.facts = data.facts || state.facts;
+      state.completedSteps.add(step);
+
+      // Atualizar UI do step
+      el.item.classList.remove('current');
+      el.item.classList.add('completed');
+      el.input.style.display = 'none';
+      el.value.style.display = 'block';
+      el.value.textContent = formatValue(step, value);
+
+      // Avançar para o próximo step
+      const nextStep = step + 1;
+      if (nextStep <= 5 && !state.completedSteps.has(nextStep)) {
+        state.currentStep = nextStep;
+        stepEls[nextStep].item.classList.add('current');
+        stepEls[nextStep].inputField.disabled = false;
+        stepEls[nextStep].btn.disabled = false;
+      }
+
+      updateStepProgress();
+      updateInferenceButton();
+
+      showToast(`Etapa ${step} (${getStepLabel(step)}) enviada!`, 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+      el.btn.disabled = false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Executar inferência
+  async function runInference() {
+    if (!state.sessionId) {
+      showToast('Crie uma sessão primeiro.', 'error');
+      return;
+    }
+
+    if (state.completedSteps.size < 5) {
+      showToast('Preencha todas as 5 etapas antes de inferir.', 'error');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      els.btnInference.innerHTML = '<span class="loading">⏳</span> Inferindo...';
+
+      const data = await apiCall(`/v1/inference?sessionId=${encodeURIComponent(state.sessionId)}`);
+
+      // Exibir resultado
+      els.resultContainer.innerHTML = `
+        <div class="result-card">
+          <div class="result-label">Recomendação</div>
+          <div class="result-value">${data.inferred || 'indefinido'}</div>
+          <div class="result-rule">Regra: ${data.rule || 'N/A'}</div>
+        </div>
+      `;
+
+      showToast('Inferência concluída!', 'success');
+
+      // Scroll para o resultado
+      els.resultContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setLoading(false);
+      els.btnInference.innerHTML = '<span>🔮</span> Executar Inferência';
+      updateInferenceButton();
+    }
+  }
+
+  // ============================================================
+  // EVENT LISTENERS
+  // ============================================================
+
+  // Criar sessão
+  els.btnCreateSession.addEventListener('click', createSession);
+
+  // Step buttons
+  Object.entries(stepEls).forEach(([step, el]) => {
+    const stepNum = parseInt(step);
+    el.btn.dataset.step = stepNum;
+    el.btn.addEventListener('click', () => sendStepData(stepNum));
+
+    // Enter key no input
+    el.inputField.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (!el.btn.disabled) sendStepData(stepNum);
+      }
+    });
+
+    // Habilitar botão quando houver valor
+    el.inputField.addEventListener('input', () => {
+      const val = el.inputField.value;
+      el.btn.disabled = val === '' || val === null || state.loading;
+    });
+
+    el.inputField.addEventListener('change', () => {
+      const val = el.inputField.value;
+      el.btn.disabled = val === '' || val === null || state.loading;
+    });
+  });
+
+  // Inferência
+  els.btnInference.addEventListener('click', runInference);
+
+  // ============================================================
+  // INICIALIZAÇÃO
+  // ============================================================
+
+  async function init() {
+    // Testar conexão com a API
+    try {
+      await apiCall('/');
+      setApiStatus(true);
+    } catch (err) {
+      setApiStatus(false);
+      showToast('API offline. Verifique se o servidor está rodando na porta 8080.', 'error');
+    }
+
+    // Estado inicial
+    updateStepProgress();
+    updateInferenceButton();
+
+    // Desabilitar steps 2-5 inicialmente
+    Object.entries(stepEls).forEach(([step, el]) => {
+      if (parseInt(step) > 1) {
+        el.inputField.disabled = true;
+        el.btn.disabled = true;
+      }
+    });
+  }
+
+  init();
+</script>
+
+</body>
+</html>

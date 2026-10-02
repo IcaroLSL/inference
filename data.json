@@ -1,0 +1,13 @@
+{
+  "_id": {
+    "$oid": "6abf0b2bfb17ff58748f3de7"
+  },
+  "active": true,
+  "facts": {
+    "people": 2,
+    "budget": 1,
+    "focus": "Privacidade",
+    "child": false,
+    "accommodation": "Lua de mel"
+  }
+}
