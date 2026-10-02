@@ -27,9 +27,9 @@ type facts struct {
 
 // Estrutura para definir regras de inferência
 type Rule struct {
-	ID     string
-	Cond   func(f facts) bool
-	Result string
+	ID         string
+	Condicao   func(f facts) bool
+	Result     string
 }
 
 // regras de inferência para determinar o tipo de quarto com base nos fatos
@@ -72,7 +72,7 @@ func runInference(raw InferenceFacts) (string, string) {
 	}
 
 	for _, r := range rules {
-		if r.Cond(f) {
+		if r.Condicao(f) {
 			return r.Result, r.ID
 		}
 	}
